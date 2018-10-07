@@ -1,6 +1,6 @@
 /*
  * atomic.c
- *
+ * Atomic operations for PPC e200z4, implementation
  *  Created on: Oct 6, 2018
  *      Author: Barna Faragó
  */
@@ -24,7 +24,7 @@ __asm uint32_t Atomic_Dec_u32(vuint32_t* ptr)
 	// r3 : ptr
 loop:
 	lwarx   r5,0,r3          // Load and reserve
-	addic	r5,r5,-1			 // Increment r5 reg.
+	addic	r5,r5,-1		 // Increment r5 reg.
 	stwcx.  r5,0,r3          // Store new value if still reserved
 	bne-    loop             // Loop if lost reservation
 	blr
@@ -111,5 +111,8 @@ uint32_t aquireLock(int gate){
 
 /* Release SEMA4 */
 void releaseLock(int gate){
+	/* Only the MASTER can write the register, which locked.
+	Writing zero to gate register, release the lock.
+	*/
 	SEMA4.GATE[gate].B.GTFSM = 0;
 }

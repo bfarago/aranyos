@@ -1,8 +1,12 @@
+/*
+ SANDBOX TEST FOR MULTICORE ATOMIC FUNCTIONS
+*/
 #include "MPC5643L.h"
 #include "aranyos.h"
 #include "atomic.h"
 #include "IntcInterrupts.h"
 #include "shared.h"
+
 //#define PIT_ENABLED // not yet possible
 #define STM_ENABLED //used for os clock counter
 
@@ -14,20 +18,20 @@ extern void __start_p1();
 /* Prototype for local functions */
 void init(void);
 
-/* Globals */
+/* Globals for core0*/
 volatile uint32_t g_counters[4];
 
 TASK(TaskQuick)
 {
-	Atomic_Inc_u32(&g_counters[0]);
-	Atomic_Inc_u32(&g_counters[2]);
+	Atomic_Inc_u32(&g_counters[0]); //common
+	Atomic_Inc_u32(&g_counters[2]); //private
 	shared_task();
 }
 
 TASK(TaskSlow)
 {
 	Atomic_Inc_u32(&g_counters[0]);
-	Atomic_Inc_u32(&g_counters[3]);
+	Atomic_Inc_u32(&g_counters[3]); //private
 }
 
 #ifdef STM_ENABLED
@@ -36,7 +40,7 @@ ISR(Stm0)
 	Os_Periodic();
 	//test
 	Atomic_Inc_u32(&g_counters[0]);
-	Atomic_Inc_u32(&g_counters[1]);
+	Atomic_Inc_u32(&g_counters[1]); //private
 	//end of ISR
 	STM.CNT.R=0; //Reset System Timers Counter
 	STM.CHANNEL[0].CIR.R=1; // Interrupt acknowladge for STM
@@ -47,7 +51,6 @@ ISR(Stm0)
 ISR(Pit)
 {
 	Os_Periodic();
-	
     /* toggle LED */
     // SIU.GPDO[LED3_pin].R ^= 1;
 	g_OsCounter++;

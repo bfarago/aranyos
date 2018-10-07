@@ -1,6 +1,6 @@
 /*
  * shared.c
- *
+ * Example for shared Atomic variable handling
  *  Created on: Oct 7, 2018
  *      Author: Barna
  */

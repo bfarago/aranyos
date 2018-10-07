@@ -1,6 +1,6 @@
 /*
  * atomic.h
- *
+ * Atomic operations for PPC e200z4
  *  Created on: Oct 6, 2018
  *      Author: Barna Faragó
  */

@@ -1,6 +1,6 @@
 /*
  * aranyos.c
- *
+ * AranyOS implementation
  *  Created on: Oct 7, 2018
  *      Author: Barna
  */
@@ -10,8 +10,11 @@
 #include "det.h"
 
 /* Globals */
+//counter of the scheduler
 uint32_t g_OsCounter;
+//actual possible Tasks number
 uint32_t g_OsTasksMax=0;
+//book-keeping of the tasks
 Aranyos_TaskBook_s g_OsTaskBook[ARANYOS_MAX_TASKS];
 
 /* Os_EnableIrq
