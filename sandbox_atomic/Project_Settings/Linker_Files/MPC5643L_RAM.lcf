@@ -1,0 +1,161 @@
+/* Internal RAM/DPM linker command file for MPC5643L                        */
+/*                                                                          */
+/*               1MB Flash, 64KB + 64KB SRAM                                */
+/*                                                                          */
+/* Intended to be used for the stationary example project.                  */
+/* This LCF should be used in dual core projects.                           */
+/*                                                                          */
+/* Note: we use "_p0" suffix on functions and section names to reference    */
+/* core_0 and "_p1" for functions and section names using the core_1.       */
+/*                                                                          */
+/* Rev 1.2 - fix RAM ranges and force symbol __start_p1                     */
+/*                                                                          */
+/* VERSION: 1.2                                                             */
+
+MEMORY
+{
+    /* core_0 SRAM: 0x40000000 - 0x4000FFFF */
+    /* core_1 SRAM: 0x50000000 - 0x5000FFFF */
+    
+    /* The folowing sections contain interrupt branch tables, INTC module and
+     ISR handlers code for both cores. Note, since the vector base address field
+     of Z4 IVPR is defined within the range [0:15] the branch tables must
+     be loaded at an address aligned to 64K boundary, for eg. 0x4000_0000.
+     */
+    exception_handlers_p0: org = 0x40000000,     len = 0x00002000 /* 8K core_0 */
+    exception_handlers_p1: org = 0x50000000,     len = 0x00002000 /* 8K core_1 */
+
+    /* Space allocated for initialization & application code code and variables
+     for both cores. The split will be made in the memory section below.*/
+    internal_ram_p0:    org = 0x40002000,       len = 0x0000A000 /* 40K core_0 */
+    internal_ram_p1:    org = 0x50002000,       len = 0x0000A000 /* 40K core_1 */
+
+    heap:               org = 0x4000C000,       len = 0x00002000 /* 8K heap core_0 */
+    stack:              org = 0x4000E000,       len = 0x00002000 /* 8K stack core_0 */
+
+    heap_p1:            org = 0x5000C000,       len = 0x00002000 /* 8K heap core_1 */
+    stack_p1:           org = 0x5000E000,       len = 0x00002000 /* 8K stack core_1 */
+
+    /* Note: Special care should be taken if internal_flash or
+    internal_ram are shared between the two cores in case of reseting
+    core_0. Some EABI initialization like read-only data, static members,
+    ctors, etc., are executed on core_0.
+    */
+}
+
+SECTIONS
+{
+    /* core_0 IVORxx and INTC branch tables */
+    GROUP : {
+        /* Special section for INTC branch table required in hardware mode.
+        Place the .intc_hw_branch_table section first in order to used both core and INTC
+        tables. The intc_hw_branch_table should contain entries aligned to 16 bytes.
+        */
+        .intc_hw_branch_table_p0 (VLECODE) ALIGN (0x10) : {}
+        
+        /* Because the z4 IVORx are settable the IVOR branch table can be placed
+        after the INTC HW table.*/
+        .ivor_branch_table_p0 (VLECODE) ALIGN (0x10) : {}
+        
+        /* ISR handlers code for core_0 */
+        .__exception_handlers_p0  (VLECODE) : {}
+
+    } > exception_handlers_p0
+
+    /* core_1 IVORxx and INTC branch tables */
+    GROUP : {
+        /* Special section for INTC branch table required in hardware mode.
+        Place the .intc_hw_branch_table section first in order to used both core and INTC
+        tables. The intc_hw_branch_table should contain entries aligned to 16 bytes.
+        */
+        .intc_hw_branch_table_p1 (VLECODE) ALIGN (0x10) : {}
+        
+        /* Because the z4 IVORx are settable the IVOR branch table can be placed
+        after the INTC HW table.*/
+        .ivor_branch_table_p1 (VLECODE) ALIGN (0x10) : {}
+        
+        /* ISR handlers code for core_1 */
+        .__exception_handlers_p1  (VLECODE) : {}
+                
+    } > exception_handlers_p1
+    
+    GROUP : {
+        /* Section used for initialization code: __ppc_eabi_init.c,
+        MPC56xx_HWInit.c, MPC56xx_init_*.c and the entry point (__startup).
+        */
+        .init : {}
+        .init_vle (VLECODE) : {
+            *(.init)
+            *(.init_vle)
+        }
+
+        .text (TEXT) : {}
+        .text_vle (VLECODE) : {
+             *(.text)
+             *(.text_vle)
+         }
+
+        .rodata (CONST) : {
+            *(.rdata)
+            *(.rodata)
+        }
+
+        .ctors : {}
+        .dtors : {}
+        extab : {}
+        extabindex : {}
+    } > internal_ram_p0
+
+    /* core_1 main code sections */
+    GROUP : {
+        .text_p1 (TEXT) : {}
+        .text_vle_p1 (VLECODE) : {
+             *(.text_p1)
+             *(.text_vle_p1)
+         }
+    } > internal_ram_p1
+
+    GROUP : {
+       /* The following sections are used in INTC SW mode to store the interrupt handlers array.
+        They should be aligned to 4K as INTC.IACKR_PRC0.VTBA_PRC0 is 21-bit wide.
+        */
+       .__uninitialized_intc_handlertable ALIGN(0x1000) : {}
+       .data   : {}
+       .sdata  : {}
+       .sbss   : {}
+       .sdata2 : {}
+       .sbss2  : {}
+       .bss    : {}
+    } > internal_ram_p0
+
+    /* here should be placed core_1 data sections */
+    GROUP : {
+       /* The following sections are used in INTC SW mode to store the interrupt handlers array.
+        They should be aligned to 4K as INTC_1.IACKR_PRC1.VTBA_PRC1 is 21-bit wide.
+        */
+       .__uninitialized_intc_handlertable_p1 ALIGN(0x1000) : {}
+    } > internal_ram_p1
+}
+/* Freescale CodeWarrior compiler address designations */
+
+/* core_0 */
+_stack_addr = ADDR(stack)+SIZEOF(stack);
+_stack_end  = ADDR(stack);
+_heap_addr  = ADDR(heap);
+_heap_end   = ADDR(heap)+SIZEOF(heap);
+
+/* core_1 */
+_stack_addr_p1 = ADDR(stack_p1)+SIZEOF(stack_p1);
+_stack_end_p1  = ADDR(stack_p1);
+_heap_addr_p1  = ADDR(heap_p1);
+_heap_end_p1   = ADDR(heap_p1)+SIZEOF(heap_p1);
+
+/* If INTC HW mode is used it represents the vector base address
+to set IVPR and the location of intc_hw_branch_table section.
+The EXCEPTION_HANDLERS[_P1] will point to the IVOR branch table.*/
+__IVPR_VALUE = ADDR(exception_handlers_p0);
+__IVPR_VALUE_P1 = ADDR(exception_handlers_p1);
+
+/* IVOR branch table location . Used in Exceptions[_p1].c */
+EXCEPTION_HANDLERS = ADDR(.ivor_branch_table_p0);
+EXCEPTION_HANDLERS_P1 = ADDR(.ivor_branch_table_p1);

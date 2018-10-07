@@ -1,0 +1,3 @@
+#define VLE_IS_ON 1 
+
+#define CALL_USR_INIT 1
