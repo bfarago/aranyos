@@ -9,6 +9,7 @@
 #include "atomic.h"
 #include "det.h"
 
+
 /* Globals */
 //counter of the scheduler
 uint32_t g_OsCounter;
@@ -16,7 +17,7 @@ uint32_t g_OsCounter;
 uint32_t g_OsTasksMax=0;
 //book-keeping of the tasks
 Aranyos_TaskBook_s g_OsTaskBook[ARANYOS_MAX_TASKS];
-
+uint32_t g_OsStack;
 /* Os_EnableIrq
  * Lower ITC prio, enable irq.
  */
@@ -68,6 +69,8 @@ uint32_t Os_TaskInitEntry(uint32_t id, AranyOs_Entry_p entry_p, Aranyos_TaskVar_
 		p->var_p->activation=0;
 		p->var_p->enabled= 1;
 		p->cfg_p= cfg_p;
+		Rtm_Clear(&var_p->rtm);
+		var_p->measure=1;
 	}
 	Os_CriticalEnd(st);
 	return g_OsTasksMax;
@@ -113,7 +116,9 @@ static void Os_CheckOneById(uint32_t id)
 	if (var->activation)
 	{
 		Atomic_Dec_u8(&(var->activation)); //var->activation--;
+		if (var->measure) Rtm_Start(&(var->rtm));
 		var->entry_p();
+		if (var->measure) Rtm_Stop(&(var->rtm));
 	}
 }
 void Os_Scheduler(void)
@@ -128,4 +133,8 @@ void Os_Scheduler(void)
 			Os_CheckOneById(i);
 		}
 	}
+}
+//#pragma interrupt SystemCallInterruptHandler
+void SystemCallInterruptHandler(void){
+//SPRG0–SPRG9
 }

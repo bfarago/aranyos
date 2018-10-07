@@ -9,15 +9,19 @@
 #define ARANYOS_H_
 #include "typedefs.h"
 #include "aranyos_cfg.h"
+#include "rtm.h"
 
 // Function pointer type for Entry points
 typedef void (*AranyOs_Entry_p)(void);
 
 //Task variables type
 typedef struct {
+	AranyOs_Entry_p entry_p;
+	rtm_var_s rtm;
+	uint8_t state;
 	uint8_t activation;
 	uint8_t enabled;
-	AranyOs_Entry_p entry_p;
+	uint8_t measure;	
 } Aranyos_TaskVar_s;
 
 //Task config type, can be const.
@@ -25,6 +29,7 @@ typedef struct {
 	uint32_t maskCounter;
 	uint32_t valueCounter;
 	uint8_t maxActivation;
+	uint8_t prio;
 } Aranyos_TaskCfg_s;
 
 //Task book keeping, internal

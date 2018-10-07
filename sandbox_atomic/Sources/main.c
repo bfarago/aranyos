@@ -6,6 +6,7 @@
 #include "atomic.h"
 #include "IntcInterrupts.h"
 #include "shared.h"
+#include "rtm.h"
 
 //#define PIT_ENABLED // not yet possible
 #define STM_ENABLED //used for os clock counter
@@ -20,18 +21,27 @@ void init(void);
 
 /* Globals for core0*/
 volatile uint32_t g_counters[4];
-
+rtm_var_s g_rtm_quick;
 TASK(TaskQuick)
 {
+	Rtm_Pause(&TaskVar_TaskQuick.rtm);
+	Rtm_Start(&g_rtm_quick);
+	Rtm_Resume(&(TaskVar_TaskQuick.rtm));
+	
 	Atomic_Inc_u32(&g_counters[0]); //common
 	Atomic_Inc_u32(&g_counters[2]); //private
 	shared_task();
+	
+	Rtm_Pause(&(TaskVar_TaskQuick.rtm));
+	Rtm_Stop(&g_rtm_quick);
+	Rtm_Resume(&(TaskVar_TaskQuick.rtm));
 }
 
 TASK(TaskSlow)
 {
 	Atomic_Inc_u32(&g_counters[0]);
 	Atomic_Inc_u32(&g_counters[3]); //private
+	Rtm_Decay(&g_rtm_quick);
 }
 
 #ifdef STM_ENABLED
@@ -60,8 +70,8 @@ ISR(Pit)
 #endif
 
 // const Os task config, stored on flash
-const Aranyos_TaskCfg_s TaskCfg_TaskQuick= {0x2f,0,3};
-const Aranyos_TaskCfg_s TaskCfg_TaskSlow=  {0x1ff,0,3};
+const Aranyos_TaskCfg_s TaskCfg_TaskQuick= {0x2f,0,3,3};
+const Aranyos_TaskCfg_s TaskCfg_TaskSlow=  {0x2ff,0,3,2};
 
 void init(void)
 {
@@ -99,6 +109,8 @@ void init(void)
 	 // Init_PIT(0,64000000, main_timer_period);
 #endif
 	Os_EnableIrq();
+	Rtm_Clear(&g_rtm_quick);
+	Rtm_Init();
 }
 
 
@@ -106,6 +118,7 @@ void init(void)
 int main(void) {
   volatile int i = 0;
   init();
+  //printf("alma");
   /* Loop forever */
   for (;;) {
     i++;

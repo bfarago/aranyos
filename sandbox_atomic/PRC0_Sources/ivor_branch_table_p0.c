@@ -19,6 +19,9 @@ extern "C" {
 /* IVOR4 will call this handler */
 extern void INTC_INTCInterruptHandler(void);
 
+/* IVOR8 will call this hanler */
+extern void SystemCallInterruptHandler(void);
+
 #pragma push
 
 #define SIXTEEN_BYTES 16
@@ -55,7 +58,7 @@ IVOR6trap:  b	IVOR6trap /* Program interrupt handler */
 IVOR7trap:  b	IVOR7trap /* Floating-point unavailable interrupt handler */
 
 .align SIXTEEN_BYTES
-IVOR8trap:  b	IVOR8trap /* System call interrupt handler */
+IVOR8trap:  b	SystemCallInterruptHandler //IVOR8trap /* System call interrupt handler */
 
 	.align SIXTEEN_BYTES
 IVOR9trap:  b	IVOR9trap /* AP unavailable interrupt handler */
