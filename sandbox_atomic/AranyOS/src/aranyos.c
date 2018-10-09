@@ -13,11 +13,15 @@
 /* Globals */
 //counter of the scheduler
 uint32_t g_OsCounter;
+
 //actual possible Tasks number
 uint32_t g_OsTasksMax=0;
+
 //book-keeping of the tasks
 Aranyos_TaskBook_s g_OsTaskBook[ARANYOS_MAX_TASKS];
+
 uint32_t g_OsStack;
+
 /* Os_EnableIrq
  * Lower ITC prio, enable irq.
  */
@@ -134,7 +138,38 @@ void Os_Scheduler(void)
 		}
 	}
 }
+
+__asm uint32_t Os_SysCall0(uint32_t service)
+{
+	se_sc
+}
+
+#define SPR_SPRG0 272
+#define SPR_SPRG1 273
+#define SPR_SPRG2 274
+#define SPR_SPRG3 275
+#define SPR_SPRG4 276
+#define SPR_SPRG5 277
+#define SPR_SPRG6 278
+#define SPR_SPRG7 279
+
+#define SPR_SPRG8 604
+#define SPR_SPRG9 605
+
+#define SPR_SRR0 26
+#define SPR_SRR1 27
+
 //#pragma interrupt SystemCallInterruptHandler
-void SystemCallInterruptHandler(void){
-//SPRG0–SPRG9
+__asm void SystemCallInterruptHandler(void){
+	mtspr SPR_SPRG0, r0 //SysCall service
+	mtspr SPR_SPRG1, r1 //SP
+	mtspr SPR_SPRG2, r2 //
+	mtspr SPR_SPRG3, r3 //Argument#1
+	mfspr r2, SPR_SRR0
+	mtspr SPR_SPRG4, r2
+	mfspr r2, SPR_SRR1
+	mtspr SPR_SPRG5, r2
+	//
+	
+	mfspr r2, SPR_SPRG2
 }
